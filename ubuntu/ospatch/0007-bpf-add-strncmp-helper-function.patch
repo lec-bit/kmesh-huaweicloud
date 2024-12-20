@@ -1,0 +1,72 @@
+From 83cd9ab81b8d881643279b352567794a44576816 Mon Sep 17 00:00:00 2001
+From: lec-bit <glfhmzmy@126.com>
+Date: Thu, 14 Mar 2024 17:21:22 +0800
+Subject: [PATCH] 0007
+
+---
+ include/uapi/linux/bpf.h       |  1 +
+ kernel/bpf/helpers.c           | 16 ++++++++++++++++
+ tools/include/uapi/linux/bpf.h |  1 +
+ 3 files changed, 18 insertions(+)
+
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 26374a0f7..44d6a8c4c 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -5058,6 +5058,7 @@ union bpf_attr {
+ 	FN(strncpy),			\
+ 	FN(strnstr),			\
+ 	FN(strnlen),			\
++	FN(_strncmp),			\
+ 	/* */
+ 
+ /* integer value in 'imm' field of BPF_CALL instruction selects which helper
+diff --git a/kernel/bpf/helpers.c b/kernel/bpf/helpers.c
+index e57bf7e59..df8e3238a 100644
+--- a/kernel/bpf/helpers.c
++++ b/kernel/bpf/helpers.c
+@@ -725,6 +725,20 @@ const struct bpf_func_proto bpf_strncpy_proto = {
+ 	.arg3_type	= ARG_ANYTHING,
+ };
+ 
++BPF_CALL_3(bpf__strncmp, const char *, s1, u32, s1_sz, const char *, s2)
++{
++	return strncmp(s1, s2, s1_sz);
++}
++
++const struct bpf_func_proto bpf__strncmp_proto = {
++	.func		= bpf__strncmp,
++	.gpl_only	= false,
++	.ret_type	= RET_INTEGER,
++	.arg1_type	= ARG_ANYTHING,
++	.arg2_type	= ARG_ANYTHING,
++	.arg3_type	= ARG_ANYTHING,
++};
++
+ static int bpf_trace_copy_string(char *buf, void *unsafe_ptr, char fmt_ptype,
+ 		size_t bufsz)
+ {
+@@ -1426,6 +1440,8 @@ bpf_base_func_proto(enum bpf_func_id func_id)
+ 		return &bpf_strncpy_proto;
+ 	case BPF_FUNC_strnstr:
+ 		return &bpf_strnstr_proto;
++	case BPF_FUNC__strncmp:
++		return &bpf__strncmp_proto;
+ 	default:
+ 		break;
+ 	}
+diff --git a/tools/include/uapi/linux/bpf.h b/tools/include/uapi/linux/bpf.h
+index e900c86c4..f41b511cb 100644
+--- a/tools/include/uapi/linux/bpf.h
++++ b/tools/include/uapi/linux/bpf.h
+@@ -5058,6 +5058,7 @@ union bpf_attr {
+ 	FN(strncpy),			\
+ 	FN(strnstr),			\
+ 	FN(strnlen),			\
++	FN(_strncmp),			\
+ 	/* */
+ 
+ /* integer value in 'imm' field of BPF_CALL instruction selects which helper
+-- 
+2.34.1
+
