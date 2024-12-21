@@ -1,0 +1,129 @@
+From 1683c138877c9005d0e38c58cee99000fe0c4061 Mon Sep 17 00:00:00 2001
+From: lec-bit <glfhmzmy@126.com>
+Date: Thu, 14 Mar 2024 17:13:32 +0800
+Subject: [PATCH] 0006
+
+---
+ include/uapi/linux/bpf.h       |  3 +++
+ kernel/bpf/helpers.c           | 47 ++++++++++++++++++++++++++++++++++
+ tools/include/uapi/linux/bpf.h | 11 +++++---
+ 3 files changed, 57 insertions(+), 4 deletions(-)
+
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 563da29be..26374a0f7 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -5055,6 +5055,9 @@ union bpf_attr {
+ 	FN(get_func_ip),		\
+ 	FN(get_attach_cookie),		\
+ 	FN(task_pt_regs),		\
++	FN(strncpy),			\
++	FN(strnstr),			\
++	FN(strnlen),			\
+ 	/* */
+ 
+ /* integer value in 'imm' field of BPF_CALL instruction selects which helper
+diff --git a/kernel/bpf/helpers.c b/kernel/bpf/helpers.c
+index a711ffe23..e57bf7e59 100644
+--- a/kernel/bpf/helpers.c
++++ b/kernel/bpf/helpers.c
+@@ -684,6 +684,47 @@ const struct bpf_func_proto bpf_this_cpu_ptr_proto = {
+ 	.arg1_type	= ARG_PTR_TO_PERCPU_BTF_ID,
+ };
+ 
++BPF_CALL_2(bpf_strnlen, void *, src, size_t, len)
++{
++	return strnlen(src, len);
++}
++
++const struct bpf_func_proto bpf_strnlen_proto = {
++	.func		= bpf_strnlen,
++	.gpl_only	= false,
++	.ret_type	= RET_INTEGER,
++	.arg1_type	= ARG_ANYTHING,
++	.arg2_type	= ARG_ANYTHING,
++};
++
++BPF_CALL_3(bpf_strnstr, void *, s1, void *, s2, size_t, len)
++{
++	return strnstr(s1, s2, len);
++}
++
++const struct bpf_func_proto bpf_strnstr_proto = {
++	.func		= bpf_strnstr,
++	.gpl_only	= false,
++	.ret_type	= RET_PTR_TO_ALLOC_MEM_OR_NULL,
++	.arg1_type	= ARG_ANYTHING,
++	.arg2_type	= ARG_ANYTHING,
++	.arg3_type	= ARG_ANYTHING,
++};
++
++BPF_CALL_3(bpf_strncpy, void *, dst, u32, dst_size, void *, src)
++{
++	return strncpy(dst, src, dst_size);
++}
++
++const struct bpf_func_proto bpf_strncpy_proto = {
++	.func		= bpf_strncpy,
++	.gpl_only	= false,
++	.ret_type	= RET_PTR_TO_ALLOC_MEM_OR_NULL,
++	.arg1_type	= ARG_ANYTHING,
++	.arg2_type	= ARG_ANYTHING,
++	.arg3_type	= ARG_ANYTHING,
++};
++
+ static int bpf_trace_copy_string(char *buf, void *unsafe_ptr, char fmt_ptype,
+ 		size_t bufsz)
+ {
+@@ -1379,6 +1420,12 @@ bpf_base_func_proto(enum bpf_func_id func_id)
+ 		return &bpf_ringbuf_query_proto;
+ 	case BPF_FUNC_for_each_map_elem:
+ 		return &bpf_for_each_map_elem_proto;
++	case BPF_FUNC_strnlen:
++		return &bpf_strnlen_proto;
++	case BPF_FUNC_strncpy:
++		return &bpf_strncpy_proto;
++	case BPF_FUNC_strnstr:
++		return &bpf_strnstr_proto;
+ 	default:
+ 		break;
+ 	}
+diff --git a/tools/include/uapi/linux/bpf.h b/tools/include/uapi/linux/bpf.h
+index 625dbf526..e900c86c4 100644
+--- a/tools/include/uapi/linux/bpf.h
++++ b/tools/include/uapi/linux/bpf.h
+@@ -2965,8 +2965,8 @@ union bpf_attr {
+  *
+  * 			# sysctl kernel.perf_event_max_stack=<new value>
+  * 	Return
+- * 		A non-negative value equal to or less than *size* on success,
+- * 		or a negative error in case of failure.
++ * 		The non-negative copied *buf* length equal to or less than
++ * 		*size* on success, or a negative error in case of failure.
+  *
+  * long bpf_skb_load_bytes_relative(const void *skb, u32 offset, void *to, u32 len, u32 start_header)
+  * 	Description
+@@ -4269,8 +4269,8 @@ union bpf_attr {
+  *
+  *			# sysctl kernel.perf_event_max_stack=<new value>
+  *	Return
+- *		A non-negative value equal to or less than *size* on success,
+- *		or a negative error in case of failure.
++ * 		The non-negative copied *buf* length equal to or less than
++ * 		*size* on success, or a negative error in case of failure.
+  *
+  * long bpf_load_hdr_opt(struct bpf_sock_ops *skops, void *searchby_res, u32 len, u64 flags)
+  *	Description
+@@ -5055,6 +5055,9 @@ union bpf_attr {
+ 	FN(get_func_ip),		\
+ 	FN(get_attach_cookie),		\
+ 	FN(task_pt_regs),		\
++	FN(strncpy),			\
++	FN(strnstr),			\
++	FN(strnlen),			\
+ 	/* */
+ 
+ /* integer value in 'imm' field of BPF_CALL instruction selects which helper
+-- 
+2.34.1
+
