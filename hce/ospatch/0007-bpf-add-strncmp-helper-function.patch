@@ -1,0 +1,72 @@
+From c286b396d3e084fb6ff5c4ae2d678935c74485f8 Mon Sep 17 00:00:00 2001
+From: zhangmingyi <zhangmingyi5@huawei.com>
+Date: Fri, 2 Aug 2024 16:21:10 +0800
+Subject: [PATCH 7/8] 0007
+
+---
+ include/uapi/linux/bpf.h       |  1 +
+ kernel/bpf/helpers.c           | 16 ++++++++++++++++
+ tools/include/uapi/linux/bpf.h |  1 +
+ 3 files changed, 18 insertions(+)
+
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 95cc7e9b3..0a72518fd 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -3919,6 +3919,7 @@ union bpf_attr {
+ 	FN(strncpy),			\
+ 	FN(strnstr),			\
+ 	FN(strnlen),			\
++	FN(_strncmp),			\
+ 	/* */
+ 
+ /* integer value in 'imm' field of BPF_CALL instruction selects which helper
+diff --git a/kernel/bpf/helpers.c b/kernel/bpf/helpers.c
+index eb4fa22cd..5df005ca0 100644
+--- a/kernel/bpf/helpers.c
++++ b/kernel/bpf/helpers.c
+@@ -694,6 +694,20 @@ const struct bpf_func_proto bpf_strncpy_proto = {
+ 	.arg3_type	= ARG_ANYTHING,
+ };
+ 
++BPF_CALL_3(bpf__strncmp, const char *, s1, u32, s1_sz, const char *, s2)
++{
++	return strncmp(s1, s2, s1_sz);
++}
++
++const struct bpf_func_proto bpf__strncmp_proto = {
++	.func		= bpf__strncmp,
++	.gpl_only	= false,
++	.ret_type	= RET_INTEGER,
++	.arg1_type	= ARG_ANYTHING,
++	.arg2_type	= ARG_ANYTHING,
++	.arg3_type	= ARG_ANYTHING,
++};
++
+ const struct bpf_func_proto bpf_get_current_task_proto __weak;
+ const struct bpf_func_proto bpf_probe_read_user_proto __weak;
+ const struct bpf_func_proto bpf_probe_read_user_str_proto __weak;
+@@ -744,6 +758,8 @@ bpf_base_func_proto(enum bpf_func_id func_id)
+ 		return &bpf_strncpy_proto;
+ 	case BPF_FUNC_strnstr:
+ 		return &bpf_strnstr_proto;
++	case BPF_FUNC__strncmp:
++		return &bpf__strncmp_proto;
+ 	default:
+ 		break;
+ 	}
+diff --git a/tools/include/uapi/linux/bpf.h b/tools/include/uapi/linux/bpf.h
+index 2c470688f..20d739441 100644
+--- a/tools/include/uapi/linux/bpf.h
++++ b/tools/include/uapi/linux/bpf.h
+@@ -3919,6 +3919,7 @@ union bpf_attr {
+ 	FN(strncpy),			\
+ 	FN(strnstr),			\
+ 	FN(strnlen),			\
++	FN(_strncmp),			\
+ 	/* */
+ 
+ /* integer value in 'imm' field of BPF_CALL instruction selects which helper
+-- 
+2.33.0
+

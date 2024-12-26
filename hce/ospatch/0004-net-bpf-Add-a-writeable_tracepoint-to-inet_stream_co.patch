@@ -1,0 +1,50 @@
+From 0bd021517c9a004ec9a91b5f7876ad4d084532a4 Mon Sep 17 00:00:00 2001
+From: wuchangye <wuchangye@huawei.com>
+Date: Tue, 23 Jan 2024 21:44:17 +0800
+Subject: [PATCH] 0004-net-bpf-Add-a-writeable_tracepoint-to-inet_stream_co
+
+---
+ include/trace/events/sock.h | 14 ++++++++++++++
+ net/ipv4/af_inet.c          |  1 +
+ 2 files changed, 15 insertions(+)
+
+diff --git a/include/trace/events/sock.h b/include/trace/events/sock.h
+index 777ee6cbe..2b5cbc8b6 100644
+--- a/include/trace/events/sock.h
++++ b/include/trace/events/sock.h
+@@ -263,6 +263,20 @@ TRACE_EVENT(inet_sk_error_report,
+ 		  __entry->error)
+ );
+ 
++#undef NET_DECLARE_TRACE
++#ifdef DECLARE_TRACE_WRITABLE
++#define NET_DECLARE_TRACE(call, proto, args, size) \
++	DECLARE_TRACE_WRITABLE(call, PARAMS(proto), PARAMS(args), size)
++#else
++#define NET_DECLARE_TRACE(call, proto, args, size) \
++	DECLARE_TRACE(call, PARAMS(proto), PARAMS(args))
++#endif
++
++NET_DECLARE_TRACE(connect_ret,
++	TP_PROTO(int *err),
++	TP_ARGS(err),
++	sizeof(int));
++
+ #endif /* _TRACE_SOCK_H */
+ 
+ /* This part must be outside protection */
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index 18ae37954..a76f01dc6 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -734,6 +734,7 @@ int inet_stream_connect(struct socket *sock, struct sockaddr *uaddr,
+ 	lock_sock(sock->sk);
+ 	err = __inet_stream_connect(sock, uaddr, addr_len, flags, 0);
+ 	release_sock(sock->sk);
++	trace_connect_ret(&err);
+ 	return err;
+ }
+ EXPORT_SYMBOL(inet_stream_connect);
+-- 
+2.33.0
+
