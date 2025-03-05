@@ -2,7 +2,7 @@
 %global __strip /bin/true
 
 Name:          kmesh
-Version:       0.0.1
+Version:       1.0.0
 Release:       1
 Summary:       %{name} is a eBPF-based service mesh kernel solution
 License:       ASL 2.0 and GPL-2.0
@@ -40,7 +40,9 @@ mkdir -p %{buildroot}/lib/modules/kmesh
 install %{_builddir}/%{name}-%{version}/kernel/ko/kmesh.ko %{buildroot}/lib/modules/kmesh
 
 mkdir -p %{buildroot}/usr/share/kmesh/bpf2go
-find %{_builddir}/%{name}-%{version}/bpf/kmesh/bpf2go -type f -name '*.o' -exec install -m 644 {} %{buildroot}/usr/share/kmesh/bpf2go \;
+cp -a %{_builddir}/%{name}-%{version}/bpf/kmesh/bpf2go/. %{buildroot}/usr/share/kmesh/bpf2go/
+find %{buildroot}/usr/share/kmesh/bpf2go -type f -name '*.go' -delete
+
 
 %check
 cd %{_builddir}/%{name}-%{version}
